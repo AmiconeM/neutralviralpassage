@@ -4,11 +4,6 @@
 #date: "10/2/2021"
 #---
 
-## output file names
-output_file="Virus_Evolution_N2000000_L30000.RData"
-pool_file="Virus_Evolution_Pool.RData" ## to store pools of genotypes to be used in the migration simulations
-  
-#  ```{r, define initial population}
 ### chose the parameters ###
 
 U=0.1 ##mutation rate
@@ -22,11 +17,15 @@ simulations=100 ##number of independent replicas
 
 N_pool=200 ##absolute size of the pool to be used for migration simulations (before growth)
 
-#```
-#```{r, growth cycles}
+## output file names
+output_file=paste("Virus_Evolution_U",U,"_N",N,"_L",L,".RData",sep="")
+pool_file=paste("Virus_Evolution_Pool_U",U,"_N",N,"_L",L,".RData",sep="") ## to store pools of genotypes to be used in the migration simulations
+
+#growth cycles
 
 Freq_all=(1:generations)*U
 Counts_all=c()
+Mutation_freq_all=list()
 N_all=rep(N,generations)
 
 Pool_G=list() ##will contain the genomes of the pooled samples for the migration simulations
@@ -64,6 +63,8 @@ for(pop in 1:simulations){
     mut_id=c()
     M_t=M ## temporary number of genotypes
     N_old=N_new
+    tot_mutations=0
+    
     ## mutation iteration for each genotype
     for(m in 1:M){
       n_i=N_new[m] #abundance of genotype m
@@ -78,6 +79,7 @@ for(pop in 1:simulations){
         M_t=M_t+mutations 
         
       }
+      tot_mutations=tot_mutations+mutations
     }
     id=1:M_t
     
@@ -138,22 +140,26 @@ for(pop in 1:simulations){
     M=length(n)
     
     ##export a pool to be used in the migration simulations every generations
-    id=1:M
-    pool=sample(id,N_pool,prob=n,replace = T) 
-    id_pool=sort(unique(pool))
-    n_pool=c()
-    for(i in 1:length(id_pool)){
-      n_pool=c(n_pool,length(which(pool==id_pool[i])))
+    if(pop%in%1:10){
+      id=1:M
+      pool=sample(id,N_pool,prob=n,replace = T) 
+      id_pool=sort(unique(pool))
+      n_pool=c()
+      for(i in 1:length(id_pool)){
+        n_pool=c(n_pool,length(which(pool==id_pool[i])))
+      }
+      Pool_n[[t]]=c(Pool_n[[t]],n_pool)
+      Pool_G[[t]]=rbind(Pool_G[[t]],Genotypes[id_pool,])
     }
-    Pool_n[[t]]=c(Pool_n[[t]],n_pool)
-    Pool_G[[t]]=rbind(Pool_G[[t]],Genotypes[id_pool,])
+    
   }
   Counts_all=c(Counts_all,Counts) ##store counts only at last generation
   Freq_all=rbind(Freq_all,freq)
   N_all=rbind(N_all,N_t)
+  Mutation_freq_all[[pop]]=c(Counts,rep(1,tot_mutations))/N_t[generations]
   
 }
 
 # Save multiple objects
-save(Counts_all,Freq_all,N_all, file = output_file)
+save(Counts_all,Freq_all,N_all,Mutation_freq_all, file = output_file)
 save(Pool_G,Pool_n, file = pool_file)

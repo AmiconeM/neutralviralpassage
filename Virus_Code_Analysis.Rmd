@@ -9,23 +9,25 @@ output: pdf_document
 
 ```{r,load no migration}
 library("writexl")
-input_file="Virus_N2000000_L30000.RData"
-output_file1="U_estimate.xlsx" ##contains the mutation rates estimate from the simulated mutation frequencies
-output_file2="Mutation_Frequencies.xlsx" ##contains the actual mutation frequencies at the end of the simulation
-output_file3="Simulated_SFS.xlsx" ##contains the site frequency spectrum values (frequency and proportions)
-load(input_file)
-```
-
-```{r,Estimated U}
 
 U=0.1 ##mutation rate
 N=2000000
 bottleneck=1/1000 ##dilution
 growth=1/bottleneck ## average growth factor
 L=30000 ##number of sites
+input_file=paste("Virus_Evolution_N",N,"_L",L,".RData",sep="")
+output_file1="U_estimate.xlsx" ##contains the mutation rates estimate from the simulated mutation frequencies
+output_file2="Mutation_Frequencies.xlsx" ##contains the actual mutation frequencies at the end of the simulation
+output_file3="Simulated_SFS.xlsx" ##contains the site frequency spectrum values (frequency and proportions)
+load(input_file)
 
 generations=15 ##number of passages
 simulations=100
+```
+
+```{r,Estimated U}
+
+
 ##distribution of U
 est_u=c()
 for(pop in 1:simulations){
@@ -36,10 +38,10 @@ for(pop in 1:simulations){
 est_u=(est_u/L)*10^6
 data=data.frame(est_u)
 
-write_xlsx(data,output_file1)
-
+Migration=rep("m=0",length(data))
+U_est=data.frame(Migration,data)
+write_xlsx(U_est,output_file1)
 ```
-
 
 ```{r,site frequency}
 ##site frequency spectrum
@@ -48,8 +50,8 @@ freq=Counts/N
 freq=as.data.frame(freq)
 write_xlsx(freq,output_file2)
 
-bins=11
-intervals=seq(0,round(max(freq)+0.005,digits = 2),length.out = bins)
+bins=7
+intervals=seq(0,0.03,length.out = bins)
 
 a=freq
 a_counts=c()
@@ -66,15 +68,16 @@ e=as.vector(d)
 data=data.frame(e,intervals[2:(length(intervals))])
 colnames(data)=c("Proportion","Frequency")
 
-write_xlsx(data,output_file3)
-
+Migration=rep("m=0",dim(data)[1])
+Sfs=data.frame(Migration,data)
+write_xlsx(Sfs,output_file3)
 ```
 
 ### With Migration
 
 ```{r,load w migration}
-#library("writexl")
-input_file="Virus_M01_N2000000_L30000.RData"
+migration=0.1
+input_file=paste("Virus_Evolution_M",migration,"_N",N,"_L",L,".RData",sep="")
 output_file1="U_estimate_M01.xlsx" ##contains the mutation rates estimate from the simulated mutation frequencies
 output_file2="Mutation_Frequencies_M01.xlsx" ##contains the actual mutation frequencies at the end of the simulation
 output_file3="Simulated_SFS_M01.xlsx" ##contains the site frequency spectrum values (frequency and proportions)
@@ -83,14 +86,6 @@ load(input_file)
 
 ```{r,Estimated U w migration}
 
-U=0.1 ##mutation rate
-N=2000000
-bottleneck=1/1000 ##dilution
-growth=1/bottleneck ## average growth factor
-L=30000 ##number of sites
-
-generations=15 ##number of passages
-simulations=100
 ##distribution of U
 est_u=c()
 for(pop in 1:simulations){
@@ -99,12 +94,12 @@ for(pop in 1:simulations){
 }
 
 est_u=(est_u/L)*10^6
-data=data.frame(est_u)
 
-write_xlsx(data,output_file1)
-
+Migration=rep("m=0.1",length(est_u))
+data=data.frame(Migration,est_u)
+U_est=rbind(U_est,data)
+write_xlsx(U_est,output_file1)
 ```
-
 
 ```{r,site frequency w migration}
 ##site frequency spectrum
@@ -113,8 +108,8 @@ freq=Counts/N
 freq=as.data.frame(freq)
 write_xlsx(freq,output_file2)
 
-bins=11
-intervals=seq(0,round(max(freq)+0.005,digits = 2),length.out = bins)
+bins=7
+intervals=seq(0,0.03,length.out = bins)
 
 a=freq
 a_counts=c()
@@ -128,10 +123,10 @@ a_freq=a_counts/sum(a_counts)
 d=a_freq
 e=as.vector(d)
 
-data=data.frame(e,intervals[2:(length(intervals))])
-colnames(data)=c("Proportion","Frequency")
-
-write_xlsx(data,output_file3)
-
+Migration=rep("m=0.1",length(e))
+data=data.frame(Migration,e,intervals[2:(length(intervals))])
+colnames(data)=c("Migration","Proportion","Frequency")
+Sfs=rbind(Sfs,data)
+write_xlsx(Sfs,output_file3)
 ```
 
